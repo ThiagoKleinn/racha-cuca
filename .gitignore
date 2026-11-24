@@ -1,0 +1,14 @@
+# CLion / CMake
+cmake-build-*/
+.idea/
+
+# gerados pelo make (dentro de codigo/)
+*.o
+/codigo/racha_cuca
+/codigo/teste
+
+# imagens geradas pelo programa
+saida/
+
+# lixo do macOS
+.DS_Store
