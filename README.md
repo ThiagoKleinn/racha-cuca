@@ -22,11 +22,15 @@ Opções:
 |---|---|
 | `--semente S` | repete o mesmo embaralhamento |
 | `--saida PASTA` | pasta das imagens geradas (padrão `saida`) |
-| `--quadros` | salva um PNG para cada passo (`quadro_0000.png`, `quadro_0001.png`...) |
+| `--quadros` | salva um PNG para cada passo (`quadro_0000.png`, `quadro_0001.png`...) e gera o `visualizador.html` |
 | `--pausa` | espera ENTER entre os passos |
 
 Sempre são gerados `embaralhado.png` e `resolvido.png` na pasta de saída. O passo a
 passo também aparece no terminal (o `.` é o espaço vazio).
+
+Com `--quadros`, abra `saida/visualizador.html` no navegador (duplo clique) para passar
+a solução com os botões, a barra ou as setas do teclado. A página usa os quadros da
+mesma pasta, então não precisa de internet nem de servidor.
 
 Testes: `make rodar-testes`
 
@@ -96,7 +100,7 @@ codigo/
   tabuleiro.c/.h   tabuleiro e movimentos
   imagem.c/.h      carregar, dividir e desenhar
   solver.c/.h      solução por camadas
-  main.c           programa (terminal + PNGs)
+  main.c           programa (terminal, PNGs e visualizador.html)
   teste.c          testes
   Makefile
   stb_image.h, stb_image_write.h   bibliotecas de domínio público (nothings/stb)

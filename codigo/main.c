@@ -15,7 +15,7 @@ static void ajuda(const char *prog) {
     printf("Opcoes:\n");
     printf("  --semente S       semente do embaralhamento (repete o mesmo tabuleiro)\n");
     printf("  --saida PASTA     pasta das imagens geradas (padrao: saida)\n");
-    printf("  --quadros         salva uma imagem PNG para cada passo da solucao\n");
+    printf("  --quadros         salva um PNG por passo e gera visualizador.html\n");
     printf("  --pausa           espera ENTER entre os passos\n");
 }
 
@@ -40,6 +40,86 @@ static const char *dir_peca(Movimento m) {
         case DIREITA:  return "para a esquerda";
     }
     return "?";
+}
+
+// pagina HTML para passar os quadros (abre direto no navegador, sem servidor)
+static void gerar_visualizador(const char *pasta, int total) {
+    char arq[1024];
+    snprintf(arq, sizeof(arq), "%s/visualizador.html", pasta);
+    FILE *f = fopen(arq, "w");
+    if (f == NULL) {
+        fprintf(stderr, "Aviso: nao consegui criar %s\n", arq);
+        return;
+    }
+    fputs("<!doctype html>\n<html lang=\"pt-br\">\n<head>\n<meta charset=\"utf-8\">\n"
+          "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+          "<title>Racha Cuca</title>\n<style>\n"
+          "body{font-family:system-ui,sans-serif;background:#1e1f22;color:#eee;margin:0;padding:16px;text-align:center}\n"
+          "img{max-width:min(92vw,720px);height:auto;border:2px solid #444;border-radius:6px}\n"
+          "button,select{font-size:18px;padding:6px 12px;margin:4px;border-radius:6px;border:1px solid #555;background:#2d2f33;color:#eee;cursor:pointer}\n"
+          "input[type=range]{width:min(92vw,720px)}\n"
+          "#info{margin:10px;font-size:18px}\n"
+          "</style>\n</head>\n<body>\n"
+          "<h2>Racha Cuca</h2>\n"
+          "<div><img id=\"quadro\" alt=\"tabuleiro\"></div>\n"
+          "<div id=\"info\"></div>\n"
+          "<div><input id=\"barra\" type=\"range\" min=\"0\" value=\"0\"></div>\n"
+          "<div>\n"
+          "<button id=\"inicio\">&#9198;</button>"
+          "<button id=\"volta\">&#9664;</button>"
+          "<button id=\"toca\">&#9654; Tocar</button>"
+          "<button id=\"avanca\">&#9654;</button>"
+          "<button id=\"fim\">&#9197;</button>\n"
+          "<select id=\"vel\"><option value=\"600\">lento</option>"
+          "<option value=\"250\" selected>normal</option>"
+          "<option value=\"80\">rapido</option></select>\n"
+          "</div>\n"
+          "<p>Teclas: setas esquerda e direita, espa&ccedil;o para tocar.</p>\n"
+          "<script>\n", f);
+    fprintf(f, "var TOTAL=%d;\n", total);
+    fputs("var i=0,timer=null;\n"
+          "var img=document.getElementById('quadro');\n"
+          "var info=document.getElementById('info');\n"
+          "var barra=document.getElementById('barra');\n"
+          "var botao=document.getElementById('toca');\n"
+          "barra.max=TOTAL;\n"
+          "function nome(k){return 'quadro_'+String(k).padStart(4,'0')+'.png';}\n"
+          "function mostra(k){\n"
+          "  i=Math.max(0,Math.min(TOTAL,k));\n"
+          "  img.src=nome(i);\n"
+          "  barra.value=i;\n"
+          "  if(i===0){info.textContent='Embaralhado';}\n"
+          "  else if(i===TOTAL){info.textContent='Resolvido ('+i+' de '+TOTAL+')';}\n"
+          "  else{info.textContent='Passo '+i+' de '+TOTAL;}\n"
+          "}\n"
+          "function para(){\n"
+          "  if(timer){clearInterval(timer);timer=null;}\n"
+          "  botao.innerHTML='&#9654; Tocar';\n"
+          "}\n"
+          "function toca(){\n"
+          "  if(timer){para();return;}\n"
+          "  if(i>=TOTAL){mostra(0);}\n"
+          "  botao.innerHTML='&#10074;&#10074; Pausar';\n"
+          "  timer=setInterval(function(){\n"
+          "    if(i>=TOTAL){para();return;}\n"
+          "    mostra(i+1);\n"
+          "  },+document.getElementById('vel').value);\n"
+          "}\n"
+          "document.getElementById('inicio').onclick=function(){para();mostra(0);};\n"
+          "document.getElementById('volta').onclick=function(){para();mostra(i-1);};\n"
+          "document.getElementById('avanca').onclick=function(){para();mostra(i+1);};\n"
+          "document.getElementById('fim').onclick=function(){para();mostra(TOTAL);};\n"
+          "botao.onclick=toca;\n"
+          "document.getElementById('vel').onchange=function(){if(timer){para();toca();}};\n"
+          "barra.oninput=function(){para();mostra(+barra.value);};\n"
+          "document.onkeydown=function(e){\n"
+          "  if(e.key==='ArrowRight'){para();mostra(i+1);}\n"
+          "  else if(e.key==='ArrowLeft'){para();mostra(i-1);}\n"
+          "  else if(e.key===' '){e.preventDefault();toca();}\n"
+          "};\n"
+          "mostra(0);\n"
+          "</script>\n</body>\n</html>\n", f);
+    fclose(f);
 }
 
 int main(int argc, char **argv) {
@@ -163,6 +243,10 @@ int main(int argc, char **argv) {
     snprintf(arq, sizeof(arq), "%s/resolvido.png", pasta);
     img_salvar_estado(&im, &t, arq);
     printf("\nPronto! Imagens em '%s/'.\n", pasta);
+    if (quadros) {
+        gerar_visualizador(pasta, total);
+        printf("Para ver passo a passo, abra '%s/visualizador.html' no navegador.\n", pasta);
+    }
 
     free(movs);
     img_liberar(&im);
